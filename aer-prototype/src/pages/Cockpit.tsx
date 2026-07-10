@@ -6,13 +6,24 @@ import {
 } from 'recharts';
 import { useStore } from '../state/store';
 import { CAPACITY_THRESHOLD, INTENT_THRESHOLD } from '../engine/score';
-import { Card, RagBadge, QuadrantChip, SegmentTag, RAG_COLOR, QUADRANT_LABEL } from '../components/ui';
+import { Card, RagBadge, SegmentTag, RAG_COLOR, QUADRANT_LABEL } from '../components/ui';
 import { formatLakh, pct } from '../lib/format';
 import type { Quadrant, ScoredProspect } from '../data/types';
 
 const QUAD_ORDER: Record<Quadrant, number> = {
   'convert-now': 0, 'build-intent': 1, 'nurture-capacity': 2, 'deprioritize': 3,
 };
+
+interface QuadMeta { label: string; hint: string; color: string; tint: string; arrow: string }
+const QUAD_META: Record<Quadrant, QuadMeta> = {
+  'convert-now': { label: 'Convert Now', hint: 'Call today', color: '#16a34a', tint: 'bg-emerald-50', arrow: '↗' },
+  'nurture-capacity': { label: 'Nurture Capacity', hint: 'Offer right-sized amount', color: '#0ea5e9', tint: 'bg-sky-50', arrow: '↖' },
+  'build-intent': { label: 'Build Intent', hint: 'Warm up / re-market', color: '#f59e0b', tint: 'bg-amber-50', arrow: '↘' },
+  'deprioritize': { label: 'Deprioritize', hint: 'No active push', color: '#94a3b8', tint: 'bg-slate-100', arrow: '↙' },
+};
+// Grid order mirrors the Capacity×Intent scatter: high-intent row on top,
+// high-capacity column on the right.
+const QUAD_GRID: Quadrant[] = ['nurture-capacity', 'convert-now', 'deprioritize', 'build-intent'];
 
 function Kpi({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: string }) {
   return (
@@ -107,37 +118,46 @@ export function Cockpit() {
               </Scatter>
             </ScatterChart>
           </ResponsiveContainer>
-          <div className="mt-1 grid grid-cols-2 gap-1 text-[11px] text-slate-500">
-            <span>↗ <b className="text-emerald-700">Convert Now</b> — call today</span>
-            <span>↖ <b className="text-sky-700">Nurture Capacity</b> — offer right-sized amount</span>
-            <span>↘ <b className="text-amber-700">Build Intent</b> — warm up / re-market</span>
-            <span>↙ <b className="text-slate-500">Deprioritize</b> — no active push</span>
-          </div>
+          <p className="mt-1 text-[11px] text-slate-400">
+            Shaded zone = <b className="text-emerald-700">Convert-Now</b> (capacity ≥ {CAPACITY_THRESHOLD} &amp; intent ≥ {INTENT_THRESHOLD}).
+            Dot colour = RAG priority. Quadrant tiles at right act as queue filters.
+          </p>
         </Card>
 
-        {/* Quadrant distribution */}
+        {/* Quadrant filter matrix — tiles positioned to mirror the scatter */}
         <Card className="lg:col-span-2 p-4">
-          <h2 className="mb-3 text-sm font-semibold text-slate-700">Pipeline distribution</h2>
-          <div className="space-y-3">
-            {(Object.keys(QUAD_ORDER) as Quadrant[]).map((q) => {
-              const count = report.quadrantCounts[q] || 0;
-              const width = pct(count / report.n);
-              return (
-                <button key={q} onClick={() => setQuadFilter(quadFilter === q ? 'all' : q)}
-                  className={`w-full text-left ${quadFilter === q ? 'opacity-100' : 'opacity-90 hover:opacity-100'}`}>
-                  <div className="flex items-center justify-between text-xs">
-                    <QuadrantChip q={q} />
-                    <span className="font-semibold text-slate-600">{count}</span>
-                  </div>
-                  <div className="mt-1 h-2 w-full rounded bg-slate-100">
-                    <div className="h-2 rounded"
-                      style={{ width, background: q === 'convert-now' ? '#16a34a' : q === 'deprioritize' ? '#cbd5e1' : '#f59e0b' }} />
-                  </div>
-                </button>
-              );
-            })}
+          <div className="mb-2 flex items-start justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-700">Pipeline quadrants</h2>
+              <p className="text-[11px] text-slate-400">Tap a tile to filter the queue</p>
+            </div>
+            {quadFilter !== 'all' && (
+              <button onClick={() => setQuadFilter('all')}
+                className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-200">
+                Clear filter ✕
+              </button>
+            )}
           </div>
-          <p className="mt-4 rounded-lg bg-teal-800/5 p-3 text-xs text-teal-900">
+
+          {/* axis-labelled 2×2 grid */}
+          <div className="flex gap-1.5">
+            <div className="flex items-center">
+              <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-300"
+                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>Intent →</span>
+            </div>
+            <div className="flex-1">
+              <div className="grid grid-cols-2 gap-2">
+                {QUAD_GRID.map((q) => (
+                  <QuadTile key={q} q={q} count={report.quadrantCounts[q] || 0} total={report.n}
+                    active={quadFilter === q} anyActive={quadFilter !== 'all'}
+                    onClick={() => setQuadFilter(quadFilter === q ? 'all' : q)} />
+                ))}
+              </div>
+              <div className="mt-1 text-right text-[9px] font-semibold uppercase tracking-wider text-slate-300">Capacity →</div>
+            </div>
+          </div>
+
+          <p className="mt-3 rounded-lg bg-teal-800/5 p-3 text-xs text-teal-900">
             <b>Human-in-the-loop:</b> AER ranks and explains — the loan officer approves,
             rejects or snoozes every lead. No automated lending decision.
           </p>
@@ -180,6 +200,36 @@ export function Cockpit() {
         </div>
       </Card>
     </div>
+  );
+}
+
+function QuadTile({ q, count, total, active, anyActive, onClick }: {
+  q: Quadrant; count: number; total: number; active: boolean; anyActive: boolean; onClick: () => void;
+}) {
+  const m = QUAD_META[q];
+  const share = total ? count / total : 0;
+  return (
+    <button onClick={onClick}
+      className={[
+        'relative flex flex-col rounded-xl p-3 text-left transition-all duration-150',
+        active ? `${m.tint} shadow-sm`
+          : anyActive ? 'bg-white ring-1 ring-slate-200 opacity-50 hover:opacity-100'
+            : 'bg-white ring-1 ring-slate-200 hover:-translate-y-0.5 hover:shadow-md',
+      ].join(' ')}
+      style={active ? { boxShadow: `0 0 0 2px ${m.color}` } : undefined}
+    >
+      <div className="flex items-start justify-between">
+        <span className="flex h-6 w-6 items-center justify-center rounded-lg text-sm font-bold text-white"
+          style={{ background: m.color }}>{m.arrow}</span>
+        <span className="text-3xl font-extrabold leading-none" style={{ color: m.color }}>{count}</span>
+      </div>
+      <div className="mt-2 text-[13px] font-semibold text-slate-800">{m.label}</div>
+      <div className="text-[11px] text-slate-400">{m.hint}</div>
+      <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100">
+        <div className="h-1.5 rounded-full" style={{ width: pct(share), background: m.color }} />
+      </div>
+      <div className="mt-1 text-[10px] font-medium text-slate-400">{pct(share)} of pipeline</div>
+    </button>
   );
 }
 
