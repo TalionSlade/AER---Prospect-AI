@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── IDBI Official Brand Tokens ─────────────────────────────────── */
+:root {
+  --idbi-green:       #00836c;
+  --idbi-green-dark:  #006b59;
+  --idbi-green-light: #4fa9a7;
+  --idbi-green-pale:  #e5f2f0;
+  --idbi-orange:      #f37021;
+  --idbi-orange-dark: #e16733;
+  --idbi-yellow:      #ffaa0a;
+  --idbi-white:       #ffffff;
+  --idbi-canvas:      #f5f7f6;
+  --idbi-border:      #e0e8e6;
+  --idbi-text:        #222222;
+  --idbi-text-muted:  #666666;
+  --idbi-text-light:  #999999;
+
+  /* Signal colors */
+  --sig-green:  #16a34a;
+  --sig-amber:  #f59e0b;
+  --sig-red:    #dc2626;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--idbi-canvas);
+  color: var(--idbi-text);
+  font-family: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 14px;
+}
+
+/* ── Scrollbars ─────────────────────────────────── */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-thumb { background: #b0c4be; border-radius: 10px; }
+::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+
+/* ── Animations ─────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulseGreen {
+  0%   { box-shadow: 0 0 0 0 rgba(0,131,108,0.35); }
+  70%  { box-shadow: 0 0 0 7px rgba(0,131,108,0); }
+  100% { box-shadow: 0 0 0 0 rgba(0,131,108,0); }
+}
+
+.aer-fade-in  { animation: fadeUp 0.25s ease both; }
+.aer-pulse    { animation: pulseGreen 2.2s infinite; }
+
+/* ── Card ─────────────────────────────────── */
+.card-base {
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid var(--idbi-border);
+  box-shadow: 0 1px 4px rgba(0,131,108,0.06), 0 2px 12px rgba(0,0,0,0.04);
+}
+
+/* ── Section label ─────────────────────────────────── */
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--idbi-text-muted);
+}
+
+/* ── KPI accent strip ─────────────────────────────────── */
+.kpi-strip-green  { border-left: 3px solid var(--idbi-green); }
+.kpi-strip-orange { border-left: 3px solid var(--idbi-orange); }
+.kpi-strip-amber  { border-left: 3px solid var(--idbi-yellow); }
+.kpi-strip-blue   { border-left: 3px solid #3b82f6; }
+.kpi-strip-slate  { border-left: 3px solid #94a3b8; }
+
+/* ── Queue row ─────────────────────────────────── */
+.queue-row { transition: background 0.1s ease; cursor: pointer; }
+.queue-row:hover { background: var(--idbi-green-pale); }
+
+/* ── IDBI primary button ─────────────────────────────────── */
+.btn-idbi-primary {
+  background: var(--idbi-green);
+  color: #fff;
+  border: 1px solid var(--idbi-green);
+  border-radius: 4px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 9px 20px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.btn-idbi-primary:hover { background: var(--idbi-green-dark); border-color: var(--idbi-green-dark); }
+
+.btn-idbi-orange {
+  background: var(--idbi-orange);
+  color: #fff;
+  border: 1px solid var(--idbi-orange);
+  border-radius: 4px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 9px 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-idbi-orange:hover { background: var(--idbi-orange-dark); border-color: var(--idbi-orange-dark); }
